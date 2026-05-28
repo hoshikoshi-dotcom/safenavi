@@ -200,12 +200,23 @@
 
   if('serviceWorker' in navigator){
     const swCode=`
-const CACHE='safenavi-v3';
+const CACHE='safenavi-v4';
 self.addEventListener('install',e=>{self.skipWaiting()});
-self.addEventListener('activate',e=>{self.clients.claim()});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{
-  if(e.request.url.includes('api.anthropic.com'))return;
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
+  const url=e.request.url;
+  // API呼び出しはキャッシュせず、ネットワーク経由で直接通す
+  if(url.includes('api.anthropic.com')||e.request.method!=='GET'){
+    e.respondWith(fetch(e.request));
+    return;
+  }
+  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+    if(res&&res.status===200&&res.type==='basic'){
+      const clone=res.clone();
+      caches.open(CACHE).then(c=>c.put(e.request,clone));
+    }
+    return res;
+  })));
 });`;
     const swBlob=new Blob([swCode],{type:'application/javascript'});
     navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
@@ -564,12 +575,4 @@ function showToast(msg){
   toastTimer=setTimeout(()=>{t.style.display='none'},2800);
 }
 
-// ========================================
-// モーダルイベント
-// ========================================
-document.getElementById('siteModal').addEventListener('click',function(e){if(e.target===this)closeSiteModal()});
-document.getElementById('siteNameInput').addEventListener('keydown',function(e){if(e.key==='Enter')confirmAddSite()});
-document.getElementById('settingsModal').addEventListener('click',function(e){if(e.target===this)closeSettings()});
-</script>
-</body>
-</html>
+// ======================
