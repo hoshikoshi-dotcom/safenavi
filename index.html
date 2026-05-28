@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SafeNavi">
+  <meta name="theme-color" content="#1C3A5E">
+  <title>SafeNavi</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:'Hiragino Sans','Meiryo','Yu Gothic',sans-serif;background:#EEF2F7;color:#1a1a2e;min-height:100vh;padding-bottom:calc(32px + env(safe-area-inset-bottom))}
+    header{background:#1C3A5E;color:white;padding:54px 16px 10px;padding-top:calc(env(safe-area-inset-top,44px) + 10px);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+    header h1{font-size:19px;letter-spacing:1px;font-style:italic}
+    header h1 .navi{color:#F59E0B}
+    .settings-btn{background:rgba(255,255,255,0.15);border:none;color:white;padding:7px 13px;border-radius:8px;font-size:13px;cursor:pointer}
+    .container{max-width:480px;margin:0 auto;padding:14px 14px 0}
+    .card{background:white;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
+    .card-title{font-size:13px;font-weight:bold;color:#1C3A5E;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    /* Site card */
+    .site-card{background:#1C3A5E;border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .site-label{color:rgba(255,255,255,0.7);font-size:12px;white-space:nowrap}
+    .site-select{flex:1;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:9px;color:white;font-size:16px;padding:8px 10px;font-family:inherit;min-width:0}
+    .site-select option{background:#1C3A5E;color:white}
+    .site-select:focus{outline:none;border-color:rgba(255,255,255,0.7)}
+    .site-add-btn{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);border-radius:9px;color:white;font-size:22px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .site-del-btn{background:rgba(220,53,69,0.4);border:1.5px solid rgba(220,53,69,0.6);border-radius:9px;color:white;font-size:16px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .no-site-warning{background:#FFF3CD;border:1px solid #FFC107;border-radius:10px;padding:12px 14px;font-size:13px;color:#856404;margin-bottom:14px;text-align:center}
+    /* Date */
+    .date-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .date-row label{font-size:13px;color:#555;white-space:nowrap}
+    .date-wrap{position:relative;flex:1;border:1.5px solid #D0D8E4;border-radius:9px;background:#F7F9FC;min-height:46px;display:flex;align-items:center}
+    .date-wrap:focus-within{border-color:#1C3A5E;background:white}
+    .date-wrap #dateDisplay{position:absolute;inset:0;display:flex;align-items:center;padding:0 14px;font-size:16px;font-weight:bold;color:#1C3A5E;letter-spacing:0.3px;pointer-events:none;z-index:1}
+    .date-wrap input[type="date"]{position:absolute;inset:0;width:100%;height:100%;font-size:16px;color:transparent;background:transparent;border:none;padding:0 14px;cursor:pointer;z-index:2;-webkit-appearance:none;appearance:none}
+    .date-wrap input[type="date"]::-webkit-calendar-picker-indicator{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;z-index:3;opacity:0.4}
+    /* Textarea */
+    textarea{width:100%;border:1.5px solid #D0D8E4;border-radius:10px;padding:12px;font-size:16px;min-height:90px;resize:none;font-family:inherit;background:#F7F9FC;color:#1a1a2e;line-height:1.6}
+    textarea:focus{outline:none;border-color:#1C3A5E;background:white}
+    /* Voice btn */
+    .voice-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:#1C3A5E;color:white;border:none;border-radius:11px;font-size:15px;font-weight:bold;cursor:pointer;margin-bottom:10px;transition:background 0.15s;user-select:none}
+    .voice-btn:active{background:#142d4a}
+    .voice-btn.recording{background:#C53030;animation:pulse 1.2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.75}}
+    /* AI btn */
+    .ai-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;background:#276749;color:white;border:none;border-radius:11px;font-size:15px;font-weight:bold;cursor:pointer;margin-top:12px;transition:background 0.15s}
+    .ai-btn:disabled{background:#9E9E9E;cursor:not-allowed}
+    .ai-btn:not(:disabled):active{background:#1a4d35}
+    /* Hazard cards */
+    .hazard-card{border:1.5px solid #E8EEF5;border-radius:12px;padding:14px;margin-bottom:12px;background:#F7F9FC}
+    .hazard-no{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:bold;color:white;background:#C53030;padding:3px 12px;border-radius:20px;margin-bottom:12px}
+    .field-label{font-size:11px;font-weight:bold;color:#7A8FA6;margin-top:10px;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px}
+    .field-label:first-of-type{margin-top:0}
+    .hazard-input{width:100%;border:1.5px solid #D0D8E4;border-radius:8px;padding:9px 11px;font-size:16px;font-family:inherit;background:white;color:#1a1a2e;line-height:1.5}
+    textarea.hazard-input{resize:none;min-height:56px}
+    select.hazard-input{cursor:pointer}
+    .hazard-input:focus{outline:none;border-color:#1C3A5E}
+    /* Save btn */
+    .save-btn{width:100%;padding:16px;background:#1C3A5E;color:white;border:none;border-radius:11px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:4px;transition:background 0.15s}
+    .save-btn:active{background:#142d4a}
+    /* History */
+    .history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .history-count{font-size:12px;color:#7A8FA6;margin-top:2px}
+    .csv-btn{background:#276749;color:white;border:none;padding:8px 16px;border-radius:9px;font-size:13px;font-weight:bold;cursor:pointer}
+    .history-item{border-left:3px solid #1C3A5E;padding:9px 12px;margin-bottom:8px;background:#F7F9FC;border-radius:0 8px 8px 0}
+    .history-meta{font-size:11px;color:#9AA8B8;margin-bottom:3px}
+    .history-tag{display:inline-block;font-size:11px;font-weight:bold;color:white;background:#C53030;padding:1px 8px;border-radius:4px;margin-bottom:4px}
+    .history-point{font-size:13px;color:#333;line-height:1.4}
+    .no-history{text-align:center;color:#B0BCC8;font-size:13px;padding:24px 0}
+    /* Toast */
+    .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1C3A5E;color:white;padding:12px 22px;border-radius:10px;font-size:14px;z-index:200;display:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+    /* Modal */
+    .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);z-index:100;display:none;justify-content:center;align-items:center;padding:20px}
+    .modal{background:white;border-radius:18px;padding:24px;width:100%;max-width:400px}
+    .modal h2{font-size:16px;margin-bottom:16px;color:#1C3A5E}
+    .modal label{font-size:12px;color:#666;display:block;margin-bottom:5px}
+    .modal input{width:100%;border:1.5px solid #D0D8E4;border-radius:9px;padding:11px 12px;font-size:16px;margin-bottom:8px;background:#F7F9FC;font-family:inherit}
+    .modal input:focus{outline:none;border-color:#1C3A5E}
+    .modal-note{font-size:11px;color:#9AA8B8;margin-bottom:18px;line-height:1.5}
+    .modal-btns{display:flex;gap:10px}
+    .modal-save{flex:1;background:#1C3A5E;color:white;border:none;padding:13px;border-radius:9px;font-size:14px;font-weight:bold;cursor:pointer}
+    .modal-cancel{flex:1;background:#EEF2F7;color:#555;border:none;padding:13px;border-radius:9px;font-size:14px;cursor:pointer}
+    /* API warning */
+    .api-warning{background:#FFF8E1;border:1px solid #F59E0B;border-radius:10px;padding:12px 14px;font-size:12px;color:#92400E;margin-bottom:14px;display:none}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Safe<span class="navi">Navi</span></h1>
+  <button class="settings-btn" id="settingsBtn" onclick="openSettings()">⚙ APIキー設定</button>
+</header>
+
+<div class="container">
+  <div class="api-warning" id="apiWarning">⚠️ APIキーが設定されていません。右上の「⚙」から設定してください。</div>
+
+  <!-- 現場選択 -->
+  <div class="site-card">
+    <span class="site-label">現場</span>
+    <select class="site-select" id="siteSelect" onchange="onSiteChange()">
+      <option value="">-- 現場を選択 --</option>
+    </select>
+    <button class="site-add-btn" onclick="addSite()" title="現場を追加">＋</button>
+    <button class="site-del-btn" onclick="deleteSite()" title="現場を削除">🗑</button>
+  </div>
+  <div class="no-site-warning" id="noSiteWarning" style="display:none">⚠️ 現場を選択または追加してください</div>
+
+  <!-- 入力カード -->
+  <div class="card">
+    <div class="card-title">📅 本日の日付</div>
+    <div class="date-row">
+      <label>日付</label>
+      <div class="date-wrap">
+        <span id="dateDisplay">—</span>
+        <input type="date" id="dateInput" onchange="updateDayOfWeek()" oninput="updateDayOfWeek()">
+      </div>
+    </div>
+    <div class="card-title">🎤 作業内容・現場状況を入力</div>
+    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+      <span id="voiceIcon">🎤</span>
+      <span id="voiceBtnText">タップして音声入力</span>
+    </button>
+    <textarea id="inputText" placeholder="例）今日はアスファルト舗装と交通誘導です。交差点付近で追越車線を規制します。架空線があります。"></textarea>
+    <button class="ai-btn" id="aiBtn" onclick="analyzeWithAI()">✨ AIに危険予知してもらう</button>
+  </div>
+
+  <!-- AI結果カード -->
+  <div class="card" id="resultCard" style="display:none">
+    <div class="card-title" id="resultCardTitle">⚠️ 危険予知結果（確認・編集できます）</div>
+    <div id="hazardCards"></div>
+    <button class="save-btn" onclick="saveRecord()">💾 この内容で保存する</button>
+  </div>
+
+  <!-- 履歴カード -->
+  <div class="card">
+    <div class="history-header">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">📋 保存済み記録</div>
+        <div class="history-count" id="historyCount">0件</div>
+      </div>
+      <button class="csv-btn" onclick="exportCSV()">⬇ CSV出力</button>
+    </div>
+    <div id="historyList"><div class="no-history">まだ記録がありません</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 現場追加モーダル -->
+<div class="modal-overlay" id="siteModal">
+  <div class="modal">
+    <h2>＋ 現場を追加</h2>
+    <label>現場名</label>
+    <input type="text" id="siteNameInput" placeholder="例）○○地区道路改良工事">
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeSiteModal()">キャンセル</button>
+      <button class="modal-save" onclick="confirmAddSite()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- APIキー設定モーダル -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>⚙ APIキー設定</h2>
+    <p id="settingsDesc" style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6">
+      このアプリはAI分析にClaude APIを使用します。<b>初回のみ</b>入力が必要です。
+    </p>
+    <label>Claude APIキー（sk-ant-...）</label>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input type="text" id="apiKeyInput" placeholder="sk-ant-api03-..." style="flex:1;font-family:monospace;min-width:0">
+      <button onclick="pasteKey()" style="flex-shrink:0;background:#1C3A5E;color:white;border:none;border-radius:9px;padding:0 14px;font-size:13px;font-weight:bold;cursor:pointer">📋 貼付</button>
+    </div>
+    <div class="modal-note">console.anthropic.com のAPIキーページでコピーしたキーを貼り付けてください。キーはこの端末内にのみ保存されます。</div>
+    <div class="modal-btns">
+      <button class="modal-cancel" id="settingsCancelBtn" onclick="closeSettings()">キャンセル</button>
+      <button class="modal-save" onclick="saveSettings()">保存して始める</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========================================
+// Manifest & SW インライン登録
+// ========================================
+(function(){
+  const manifest = {
+    name:'SafeNavi', short_name:'SafeNavi',
+    description:'建設現場KY活動支援アプリ',
+    start_url:'./', display:'standalone',
+    background_color:'#EEF2F7', theme_color:'#1C3A5E', orientation:'portrait',
+    icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%231C3A5E' rx='24'/><text x='50%' y='44%' font-size='68' font-weight='bold' font-style='italic' text-anchor='middle' dominant-baseline='middle' fill='white' font-family='Arial'>Safe</text><text x='50%' y='72%' font-size='68' font-weight='bold' font-style='italic' text-anchor='middle' dominant-baseline='middle' fill='%23F59E0B' font-family='Arial'>Navi</text></svg>",sizes:'192x192',type:'image/svg+xml'}]
+  };
+  const mBlob = new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  const mUrl = URL.createObjectURL(mBlob);
+  const link = document.createElement('link');
+  link.rel='manifest'; link.href=mUrl;
+  document.head.appendChild(link);
+
+  if('serviceWorker' in navigator){
+    const swCode=`
+const CACHE='safenavi-v3';
+self.addEventListener('install',e=>{self.skipWaiting()});
+self.addEventListener('activate',e=>{self.clients.claim()});
+self.addEventListener('fetch',e=>{
+  if(e.request.url.includes('api.anthropic.com'))return;
+  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
+});`;
+    const swBlob=new Blob([swCode],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+  }
+})();
+
+// ========================================
+// 現場管理
+// ========================================
+const getSites=()=>JSON.parse(localStorage.getItem('kySites')||'[]');
+const saveSites=s=>localStorage.setItem('kySites',JSON.stringify(s));
+const getCurrentSiteId=()=>localStorage.getItem('kyCurrentSite')||'';
+const setCurrentSiteId=id=>localStorage.setItem('kyCurrentSite',id);
+
+function renderSiteSelect(){
+  const sites=getSites(), cur=getCurrentSiteId(), sel=document.getElementById('siteSelect');
+  sel.innerHTML='<option value="">-- 現場を選択 --</option>'+
+    sites.map(s=>`<option value="${s.id}"${s.id===cur?' selected':''}>${escHtml(s.name)}</option>`).join('');
+  const ok=!!cur&&sites.some(s=>s.id===cur);
+  document.getElementById('noSiteWarning').style.display=ok?'none':'block';
+}
+function onSiteChange(){setCurrentSiteId(document.getElementById('siteSelect').value);renderSiteSelect();renderHistory()}
+function addSite(){
+  document.getElementById('siteNameInput').value='';
+  document.getElementById('siteModal').style.display='flex';
+  setTimeout(()=>document.getElementById('siteNameInput').focus(),100);
+}
+function closeSiteModal(){document.getElementById('siteModal').style.display='none'}
+function confirmAddSite(){
+  const name=document.getElementById('siteNameInput').value.trim();
+  if(!name){showToast('現場名を入力してください');return}
+  const sites=getSites(), id='site_'+Date.now();
+  sites.push({id,name}); saveSites(sites); setCurrentSiteId(id);
+  closeSiteModal(); renderSiteSelect(); renderHistory();
+  showToast('✓ 現場「'+name+'」を追加しました');
+}
+function deleteSite(){
+  const id=getCurrentSiteId();
+  if(!id){showToast('削除する現場を選択してください');return}
+  const sites=getSites(), site=sites.find(s=>s.id===id);
+  if(!site)return;
+  if(!confirm('「'+site.name+'」を削除しますか？\n※KYデータは残ります'))return;
+  const ns=sites.filter(s=>s.id!==id); saveSites(ns);
+  setCurrentSiteId(ns.length?ns[0].id:'');
+  renderSiteSelect(); renderHistory(); showToast('現場を削除しました');
+}
+
+// ========================================
+// IndexedDB
+// ========================================
+const DB_NAME='kyApp', DB_VERSION=1;
+let db;
+function initDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('records')){
+        d.createObjectStore('records',{keyPath:'id',autoIncrement:true});
+      }
+    };
+    req.onsuccess=e=>{db=e.target.result;res()};
+    req.onerror=()=>rej(req.error);
+  });
+}
+function saveToDB(records){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('records','readwrite'), store=tx.objectStore('records');
+    records.forEach(r=>store.add(r));
+    tx.oncomplete=res; tx.onerror=()=>rej(tx.error);
+  });
+}
+function getAllFromDB(){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('records','readonly'), store=tx.objectStore('records');
+    const req=store.getAll();
+    req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error);
+  });
+}
+
+// ========================================
+// 定数
+// ========================================
+const HAZARD_TAGS=['重機接触・作業半径','玉掛け・クレーン','転落・墜落','架空線接触','熱中症','第三者災害','土砂崩壊・落石','車両後退・轢かれ','はさまれ・巻き込まれ','その他'];
+
+let currentHazards=[], recognition=null, isRecording=false, finalTranscript='', baseText='';
+
+// ========================================
+// 起動（scriptはbody末尾なのでDOMContentLoaded不要）
+// ========================================
+(async()=>{
+  const today=new Date();
+  const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
+  const todayVal=`${y}-${m}-${d}`;
+  document.getElementById('dateInput').value=todayVal;
+  updateDayOfWeek(todayVal);
+  try{ await initDB(); }catch(e){ console.error('DB init error:',e); }
+  renderSiteSelect();
+  renderHistory();
+  checkApiKey();
+  if(!localStorage.getItem('claudeApiKey')) openSettings(true);
+})();
+
+// ========================================
+// 日付・曜日
+// ========================================
+function updateDayOfWeek(explicitVal){
+  const val=explicitVal||document.getElementById('dateInput').value;
+  const days=['日','月','火','水','木','金','土'];
+  const dayColors=['#C53030','#1C3A5E','#1C3A5E','#1C3A5E','#1C3A5E','#1C3A5E','#1C3A5E'];
+  const disp=document.getElementById('dateDisplay');
+  if(!disp)return;
+  if(!val){disp.textContent='—';return}
+  const p=val.split('-');
+  if(p.length!==3)return;
+  const dt=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
+  const dow=dt.getDay();
+  disp.textContent=`${parseInt(p[0])}年${parseInt(p[1])}月${parseInt(p[2])}日（${days[dow]}）`;
+  disp.style.color=dayColors[dow];
+}
+
+// ========================================
+// APIキー
+// ========================================
+function checkApiKey(){
+  const key=localStorage.getItem('claudeApiKey');
+  document.getElementById('apiWarning').style.display=key?'none':'block';
+  const btn=document.getElementById('settingsBtn');
+  if(key){btn.style.fontSize='11px';btn.style.padding='4px 9px';btn.style.opacity='0.6';btn.textContent='⚙'}
+  else{btn.style.fontSize='';btn.style.padding='';btn.style.opacity='';btn.textContent='⚙ APIキー設定'}
+}
+function openSettings(isFirst=false){
+  document.getElementById('apiKeyInput').value=localStorage.getItem('claudeApiKey')||'';
+  document.getElementById('settingsModal').style.display='flex';
+  document.getElementById('settingsCancelBtn').style.display='';
+  setTimeout(()=>document.getElementById('apiKeyInput').focus(),100);
+}
+function closeSettings(){document.getElementById('settingsModal').style.display='none'}
+function saveSettings(){
+  const key=document.getElementById('apiKeyInput').value.trim();
+  if(!key){showToast('APIキーを入力してください');return}
+  localStorage.setItem('claudeApiKey',key); closeSettings(); checkApiKey();
+  showToast('✓ APIキーを保存しました');
+}
+async function pasteKey(){
+  try{const t=await navigator.clipboard.readText();document.getElementById('apiKeyInput').value=t.trim();showToast('✓ 貼り付けました')}
+  catch(e){document.getElementById('apiKeyInput').focus();showToast('入力欄をタップして長押し→貼り付け')}
+}
+
+// ========================================
+// 音声入力
+// ========================================
+function stopRecording(){
+  isRecording=false;
+  if(recognition){try{recognition.stop()}catch(e){}}
+  document.getElementById('voiceBtn').classList.remove('recording');
+  document.getElementById('voiceBtnText').textContent='タップして音声入力';
+  document.getElementById('voiceIcon').textContent='🎤';
+}
+function toggleVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('このブラウザは音声入力に対応していません');return}
+  if(isRecording){stopRecording();return}
+  baseText=document.getElementById('inputText').value; finalTranscript='';
+  recognition=new SR();
+  recognition.lang='ja-JP'; recognition.continuous=true; recognition.interimResults=true;
+  recognition.onstart=()=>{
+    isRecording=true;
+    document.getElementById('voiceBtn').classList.add('recording');
+    document.getElementById('voiceBtnText').textContent='録音中… タップで停止';
+    document.getElementById('voiceIcon').textContent='⏹';
+  };
+  recognition.onresult=e=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) finalTranscript+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    const ta=document.getElementById('inputText');
+    const sep=baseText?'\n':'';
+    ta.value=baseText+sep+finalTranscript+interim;
+  };
+  recognition.onend=()=>{if(isRecording){try{recognition.start()}catch(e){stopRecording()}}};
+  recognition.onerror=e=>{
+    if(e.error==='no-speech')return;
+    if(e.error!=='aborted') showToast('音声入力エラー: '+e.error);
+    stopRecording();
+  };
+  recognition.start();
+}
+
+// ========================================
+// AI分析
+// ========================================
+async function analyzeWithAI(){
+  const text=document.getElementById('inputText').value.trim();
+  if(!text){showToast('作業内容・現場状況を入力してください');return}
+  const apiKey=localStorage.getItem('claudeApiKey');
+  if(!apiKey){showToast('APIキーを設定してください');openSettings();return}
+  const btn=document.getElementById('aiBtn');
+  btn.disabled=true; btn.textContent='⏳ AI分析中...';
+  const tagList=HAZARD_TAGS.join('、');
+  const prompt=`あなたは土木・建設工事現場の安全管理専門家です。以下の作業情報をもとに、KY（危険予知）活動として現場で共有すべき危険ポイントを3〜6件挙げてください。
+
+【作業情報】
+${text}
+
+【危険タグ分類】
+${tagList}
+
+以下のJSON配列形式で出力してください。件数は現場状況に応じて3〜6件で調整してください：
+[
+  {"危険ポイント":"〜の危険","危険タグ":"タグ名","対策":"〜を行う"},
+  ...
+]
+
+土木・建設専門用語（アスファルト、バックホウ、玉掛け、矢板、クレーン旋回半径など）を適切に使用し、対策は「〜を行う」「〜を確認する」のように具体的な行動で記載してください。`;
+
+  try{
+    let response;
+    try{
+      response=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-calls':'true'},
+        body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1024,messages:[{role:'user',content:prompt}]})
+      });
+    }catch(fetchErr){
+      throw new Error('通信エラー: ネット接続を確認してください（'+fetchErr.message+')');
+    }
+    if(response.status===401){
+      localStorage.removeItem('claudeApiKey');checkApiKey();
+      throw new Error('APIキーが無効です。正しいキーを再設定してください');
+    }
+    if(!response.ok){
+      const err=await response.json().catch(()=>({}));
+      throw new Error(err.error?.message||`APIエラー (${response.status})`);
+    }
+    const data=await response.json();
+    const content=data.content[0].text;
+    const match=content.match(/\[[\s\S]*\]/);
+    if(!match) throw new Error('AIの応答形式が正しくありません');
+    currentHazards=JSON.parse(match[0]);
+    if(!Array.isArray(currentHazards)||currentHazards.length===0) throw new Error('危険ポイントが生成されませんでした');
+    renderHazardCards(currentHazards);
+    document.getElementById('resultCardTitle').textContent=`⚠️ 危険予知結果　${currentHazards.length}件（確認・編集できます）`;
+    document.getElementById('resultCard').style.display='block';
+    setTimeout(()=>document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'}),100);
+  }catch(err){
+    showToast('エラー: '+err.message);
+    console.error('AI分析エラー:',err);
+  }finally{
+    btn.disabled=false; btn.textContent='✨ AIに危険予知してもらう';
+  }
+}
+
+function renderHazardCards(hazards){
+  const cards=hazards.slice(0,6).map((h,i)=>`
+    <div class="hazard-card">
+      <div class="hazard-no">⚠️ 危険ポイント ${i+1}</div>
+      <div class="field-label">危険ポイント</div>
+      <textarea class="hazard-input" id="hp_${i}" rows="2">${escHtml(h['危険ポイント']||'')}</textarea>
+      <div class="field-label">危険タグ</div>
+      <select class="hazard-input" id="ht_${i}">
+        ${HAZARD_TAGS.map(t=>`<option value="${t}"${t===h['危険タグ']?' selected':''}>${t}</option>`).join('')}
+      </select>
+      <div class="field-label">対策（私たちはこうします）</div>
+      <textarea class="hazard-input" id="hm_${i}" rows="2">${escHtml(h['対策']||'')}</textarea>
+    </div>`).join('');
+  document.getElementById('hazardCards').innerHTML=cards;
+}
+
+// ========================================
+// 保存
+// ========================================
+async function saveRecord(){
+  const date=document.getElementById('dateInput').value;
+  if(!date){showToast('日付を入力してください');return}
+  const siteId=getCurrentSiteId();
+  if(!siteId){showToast('現場を選択してください');return}
+  const site=getSites().find(s=>s.id===siteId);
+  const siteName=site?site.name:'';
+  const workContent=document.getElementById('inputText').value.trim();
+  const count=Math.min(currentHazards.length,6);
+  const records=Array.from({length:count},(_,i)=>({
+    date, siteId, 現場名:siteName,
+    作業内容:workContent,
+    危険ポイントNo:i+1,
+    危険ポイント:document.getElementById(`hp_${i}`)?.value||'',
+    危険タグ:document.getElementById(`ht_${i}`)?.value||'',
+    対策:document.getElementById(`hm_${i}`)?.value||'',
+    savedAt:new Date().toISOString()
+  }));
+  try{
+    await saveToDB(records);
+    showToast('✓ 保存しました');
+    document.getElementById('resultCard').style.display='none';
+    document.getElementById('inputText').value='';
+    currentHazards=[];
+    await renderHistory();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){showToast('保存に失敗しました: '+e.message)}
+}
+
+// ========================================
+// 履歴
+// ========================================
+async function renderHistory(){
+  const all=await getAllFromDB();
+  const siteId=getCurrentSiteId();
+  const records=siteId?all.filter(r=>r.siteId===siteId):all;
+  document.getElementById('historyCount').textContent=`${records.length}件`;
+  const list=document.getElementById('historyList');
+  if(records.length===0){list.innerHTML='<div class="no-history">この現場の記録はまだありません</div>';return}
+  const recent=[...records].reverse().slice(0,15);
+  list.innerHTML=recent.map(r=>`
+    <div class="history-item">
+      <div class="history-meta">${r.date}　ポイント${r.危険ポイントNo}</div>
+      <div><span class="history-tag">${escHtml(r.危険タグ)}</span></div>
+      <div class="history-point">${escHtml(r.危険ポイント)}</div>
+    </div>`).join('');
+}
+
+// ========================================
+// CSV出力
+// ========================================
+async function exportCSV(){
+  const all=await getAllFromDB();
+  const siteId=getCurrentSiteId();
+  const records=siteId?all.filter(r=>r.siteId===siteId):all;
+  if(records.length===0){showToast('この現場の記録がありません');return}
+  const site=getSites().find(s=>s.id===siteId);
+  const siteName=(site?site.name:'記録').replace(/[\\/:*?"<>|]/g,'_');
+  const header='現場名,日付,作業内容,危険ポイントNo,危険ポイント,危険タグ,対策';
+  const rows=records.map(r=>[csvEsc(r.現場名||''),r.date,csvEsc(r.作業内容||''),r.危険ポイントNo,csvEsc(r.危険ポイント||''),csvEsc(r.危険タグ||''),csvEsc(r.対策||'')].join(','));
+  const csv='﻿'+header+'\n'+rows.join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`KY_${siteName}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast(`✓ CSV出力しました（${records.length}件）`);
+}
+
+function csvEsc(val){return'"'+String(val).replace(/"/g,'""')+'"'}
+function escHtml(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ========================================
+// Toast
+// ========================================
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.style.display='none'},2800);
+}
+
+// ========================================
+// モーダルイベント
+// ========================================
+document.getElementById('siteModal').addEventListener('click',function(e){if(e.target===this)closeSiteModal()});
+document.getElementById('siteNameInput').addEventListener('keydown',function(e){if(e.key==='Enter')confirmAddSite()});
+document.getElementById('settingsModal').addEventListener('click',function(e){if(e.target===this)closeSettings()});
+</script>
+</body>
+</html>
