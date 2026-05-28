@@ -418,11 +418,10 @@ ${tagList}
     // iOS Safari対応：XHRとfetchを両方試みる
     const callAPI=()=>new Promise((resolve,reject)=>{
       const xhr=new XMLHttpRequest();
-      xhr.open('POST','https://api.anthropic.com/v1/messages',true);
+      xhr.open('POST','https://blue-fire-22b8.hoshikoshi.workers.dev',true);
       xhr.setRequestHeader('Content-Type','application/json');
       xhr.setRequestHeader('x-api-key',apiKey);
       xhr.setRequestHeader('anthropic-version','2023-06-01');
-      xhr.setRequestHeader('anthropic-dangerous-direct-browser-calls','true');
       xhr.timeout=30000;
       xhr.onload=()=>resolve({status:xhr.status,ok:xhr.status>=200&&xhr.status<300,text:xhr.responseText});
       xhr.onerror=()=>reject(new Error('通信エラー: ネット接続を確認してください'));
