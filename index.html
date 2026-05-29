@@ -81,6 +81,13 @@
     .modal-btns{display:flex;gap:10px}
     .modal-save{flex:1;background:#1C3A5E;color:white;border:none;padding:13px;border-radius:9px;font-size:14px;font-weight:bold;cursor:pointer}
     .modal-cancel{flex:1;background:#EEF2F7;color:#555;border:none;padding:13px;border-radius:9px;font-size:14px;cursor:pointer}
+    /* Input hint */
+    .input-hint{background:#F0F5FF;border:1px solid #C7D9F5;border-radius:10px;padding:12px 14px;margin-top:12px}
+    .hint-title{font-size:12px;font-weight:bold;color:#1C3A5E;margin-bottom:10px}
+    .hint-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .hint-item{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:#3A5278;line-height:1.4}
+    .hint-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+    .hint-item small{color:#7A8FA6;font-size:11px}
     /* API warning */
     .api-warning{background:#FFF8E1;border:1px solid #F59E0B;border-radius:10px;padding:12px 14px;font-size:12px;color:#92400E;margin-bottom:14px;display:none}
   </style>
@@ -121,8 +128,17 @@
       <span id="voiceIcon">🎤</span>
       <span id="voiceBtnText">タップして音声入力</span>
     </button>
-    <textarea id="inputText" placeholder="例）今日はアスファルト舗装と交通誘導です。交差点付近で追越車線を規制します。架空線があります。"></textarea>
+    <textarea id="inputText" placeholder="例）今日はバックホウ0.45㎥で深さ2.5mの開削工事。湧水あり、軟弱地盤。クレーン25tで覆工板を吊り込む。交差点付近で片側交互通行規制。架空線あり。作業員6名、うち協力業者2名。"></textarea>
     <button class="ai-btn" id="aiBtn" onclick="analyzeWithAI()">✨ AIに危険予知してもらう</button>
+    <div class="input-hint">
+      <div class="hint-title">💡 より具体的なKYにするために</div>
+      <div class="hint-grid">
+        <div class="hint-item"><span class="hint-icon">🚜</span><span>使用重機・規格<br><small>バックホウ0.45㎥、25tクレーン等</small></span></div>
+        <div class="hint-item"><span class="hint-icon">📍</span><span>作業場所の状況<br><small>掘削深さ・高さ・交通量・架空線</small></span></div>
+        <div class="hint-item"><span class="hint-icon">🌧</span><span>天候・地盤<br><small>雨後・湧水・軟弱地盤等</small></span></div>
+        <div class="hint-item"><span class="hint-icon">👷</span><span>作業人数・体制<br><small>人数・協力業者の有無</small></span></div>
+      </div>
+    </div>
   </div>
 
   <!-- AI結果カード -->
@@ -398,7 +414,7 @@ async function analyzeWithAI(){
   const btn=document.getElementById('aiBtn');
   btn.disabled=true; btn.textContent='⏳ AI分析中...';
   const tagList=HAZARD_TAGS.join('、');
-  const prompt=`あなたは土木・建設工事現場の安全管理専門家です。以下の作業情報をもとに、KY（危険予知）活動として現場で共有すべき危険ポイントを3〜6件挙げてください。
+  const prompt=`あなたは土木・建設工事現場の安全管理専門家です。以下の作業情報をもとに、KY（危険予知）活動として現場で朝礼で読み上げられる危険ポイントを3〜5件挙げてください。
 
 【作業情報】
 ${text}
@@ -406,13 +422,17 @@ ${text}
 【危険タグ分類】
 ${tagList}
 
-以下のJSON配列形式で出力してください。件数は現場状況に応じて3〜6件で調整してください：
-[
-  {"危険ポイント":"〜の危険","危険タグ":"タグ名","対策":"〜を行う"},
-  ...
-]
+【出力ルール】
+・危険ポイントは「○○が△△して、□□になる危険」という因果の形で書く（例：「バックホウ旋回半径内に作業員が立ち入り、接触して重傷を負う危険」）
+・作業情報に登場する機械名・場所・状況を必ず危険ポイントに盛り込む。一般論・ありきたりな表現は禁止
+・対策は「〜する」という具体的な行動で書く（例：「旋回半径3m以内を立入禁止区域とし、バリケードを設置する」）。「注意する」「確認を徹底する」だけの抽象表現は禁止
+・件数は作業の複雑さに応じて3〜5件とする
 
-土木・建設専門用語（アスファルト、バックホウ、玉掛け、矢板、クレーン旋回半径など）を適切に使用し、対策は「〜を行う」「〜を確認する」のように具体的な行動で記載してください。`;
+以下のJSON配列形式のみで出力してください（他の文章は不要）：
+[
+  {"危険ポイント":"〜の危険","危険タグ":"タグ名","対策":"〜する"},
+  ...
+]`;
 
   try{
     // iOS Safari対応：XHRとfetchを両方試みる
